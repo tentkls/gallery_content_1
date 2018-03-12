@@ -1,3 +1,7 @@
+import groovy.json.JsonSlurper
+
+def languages = {"en", "de", "it", "es", "pt", "fr", }
+
 def execute(String[] command){
    def stdOut = new ByteArrayOutputStream()
    exec {
@@ -12,19 +16,57 @@ def getLastCommitHash() {
 }
 
 def getLastCommitChangeList(String hash){
-println(hash)
-return execute("git", "show", "--oneline", "--name-only", hash)
+def files = execute("git", "show", "--oneline", "--name-only", hash).split("\n")
+if(files.length>1){
+return files[1]
+}else {return null}
+}
+
+def download(String address, String destination) {
+  new File(destination).withOutputStream { out ->
+    out << new URL(address).openStream()
+  }
 }
 
 def prepareResources(String fileName){
-	execute("cp", "-f", fileName, "../app/app/src/main/assets/")
+	//prepare content
+	execute("mkdir", "-p", "../app/app/src/main/assets/")
+	execute("cp", "-f", fileName, "../app/app/src/main/assets/content.json")
 	def file = new File(fileName)
 	def json = new JsonSlurper().parseText(file.text)
-	println(json)
+
+//prepare icons
+download(json.icon, "../app/app/src/main/res/drawable/icon_template.png")
+	execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "512x512", "../app/app/src/main/res/drawable/icon.png")
+	execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "1024x500", "../app/app/src/main/res/drawable/banner.png")				
+
+//prepare application info
+def title = json.title
+def shortDescription = json.shortDescription
+def description = json.description
+
+def fullTitle = ""+json.title;
+
+new File("../app/title.txt").withWriter { writer ->
+    writer.write(fullTitle)
+}
+new File("../app/shortDescription.txt").withWriter { writer ->
+    writer.write(fullShortDescription)
+}
+new File("../app/description.txt").withWriter { writer ->
+    writer.write(fullDescription)
+}
+
+	def propertiesFile = new File("../app/content.properties")
+	def properties = "app_name="+json.appName+"\n"
+	properties <<= "ad_page="+json.adPage+"\n"
+	
 }
 
 task printGitVersionName {
     doLast {
-        println getLastCommitChangeList(getLastCommitHash())
+	def fileName = getLastCommitChangeList(getLastCommitHash());
+        println fileName
+	prepareResources(fileName)
     }
 }
