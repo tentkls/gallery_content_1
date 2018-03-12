@@ -1,6 +1,6 @@
 import groovy.json.JsonSlurper
 
-def execute(String[] command) {
+static def execute(String[] command) {
     def stdOut = new ByteArrayOutputStream()
     exec {
         commandLine command
@@ -9,11 +9,11 @@ def execute(String[] command) {
     return stdOut.toString().trim()
 }
 
-def getLastCommitHash() {
+static def getLastCommitHash() {
     return execute("git", "rev-parse", "--short", "HEAD")
 }
 
-def getLastCommitChangeList(String hash) {
+static def getLastCommitChangeList(String hash) {
     def files = execute("git", "show", "--oneline", "--name-only", hash).split("\n")
     if (files.length > 1) {
         return files[1]
@@ -22,16 +22,15 @@ def getLastCommitChangeList(String hash) {
     }
 }
 
-def download(String address, String destination) {
+static def download(String address, String destination) {
     new File(destination).withOutputStream { out ->
         out << new URL(address).openStream()
     }
 }
 
-def tranlate(String text, String lng) {
-    def yaApiKey = "trnsl.1.1.20140730T124426Z.488c3627d8ae111c.6f11fb4603c23545d229a79e96d04a7400b864dd"
+static def translate(String text, String lng, String apiKey) {
     def baseUrl = new URL("https://translate.yandex.net/api/v1.5/tr.json/translate")
-    def queryString = "key=" + yaApiKey + "&text=" + text + "&lang=" + lng
+    def queryString = String.format("key=%s&text=%s&lang=%s", apiKey, text, lng)
     def connection = baseUrl.openConnection()
     connection.with {
         doOutput = true
@@ -43,19 +42,23 @@ def tranlate(String text, String lng) {
     }
 }
 
-def prepareResources(String fileName) {
-    //prepare content
-    execute("mkdir", "-p", "../app/app/src/main/assets/")
-    execute("cp", "-f", fileName, "../app/app/src/main/assets/content.json")
-    def file = new File(fileName)
-    def json = new JsonSlurper().parseText(file.text)
+static def prepareApplicationResources(def json) {
+    new File("../app/app/src/main/assets/content.json").withWriter { writer ->
+        writer.write(json)
+    }
 
-    //prepare icons
-    download(json.icon, "../app/app/src/main/res/drawable/icon_template.png")
-    execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "512x512", "../app/app/src/main/res/drawable/icon.png")
-    execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "1024x500", "../app/app/src/main/res/drawable/banner.png")
+    def properties = String.format("app_name=%s\nad_page=%s\npackage_name=com.gallery.gallery%s", json.title, json.adPage, json.uniqueTag)
+    new File("../app/content.properties").withWriter { writer ->
+        writer.write(properties)
+    }
 
-    //prepare application info
+    def stringResources = String.format("<resources><string name=\"app_name\">%s</string></resources>", json.title)
+    new File("../app/app/src/main/res/values/strings.xml").withWriter { writer ->
+        writer.write(stringResources)
+    }
+}
+
+static def prepareApplicationDescription(def json) {
     def title = json.title
     def shortDescription = json.shortDescription
     def description = json.description
@@ -65,10 +68,11 @@ def prepareResources(String fileName) {
     def fullDescription = '' << ''
 
     def languages = ["en", "de", "it", "es", "pt", "ru", "fr"]
+    def apiKey = "trnsl.1.1.20140730T124426Z.488c3627d8ae111c.6f11fb4603c23545d229a79e96d04a7400b864dd"
     languages.each { def lng ->
-        fullTitle <<= lng + "\n" + tranlate(title, lng) + "\n\n"
-        fullShortDescription <<= lng + "\n" + tranlate(shortDescription, lng) + "\n\n"
-        fullDescription <<= lng + "\n" + tranlate(description, lng) + "\n\n"
+        fullTitle <<= lng + "\n" + tranlate(title, lng, apiKey) + "\n\n"
+        fullShortDescription <<= lng + "\n" + tranlate(shortDescription, lng, apiKey) + "\n\n"
+        fullDescription <<= lng + "\n" + tranlate(description, lng, apiKey) + "\n\n"
     }
 
     new File("../app/title.txt").withWriter { writer ->
@@ -80,17 +84,21 @@ def prepareResources(String fileName) {
     new File("../app/description.txt").withWriter { writer ->
         writer.write(fullDescription.toString())
     }
-
-    def propertiesFile = new File("../app/content.properties")
-    def properties = "app_name=" + json.appName + "\n"
-    properties <<= "ad_page=" + json.adPage + "\n"
-
 }
 
-task printGitVersionName {
+static def prepareApplicationMediaFiles(def json) {
+    download(json.icon, "../app/app/src/main/res/drawable/icon_template.png")
+    execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "512x512", "../app/app/src/main/res/drawable/icon.png")
+    execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "1024x500", "../app/app/src/main/res/drawable/banner.png")
+}
+
+task prepareResources {
     doLast {
-        def fileName = getLastCommitChangeList(getLastCommitHash());
-        println fileName
-        prepareResources(fileName)
+        def fileName = "test"//getLastCommitChangeList(getLastCommitHash());
+        def file = new File(fileName)
+        def json = new JsonSlurper().parseText(file.text)
+        prepareApplicationResources(json)
+        prepareApplicationDescription(json)
+        prepareApplicationMediaFiles(json)
     }
 }
