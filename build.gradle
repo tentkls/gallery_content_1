@@ -1,0 +1,23 @@
+def getLastCommitHash() {
+    def hashStdOut = new ByteArrayOutputStream()
+    exec {
+        commandLine "git", "rev-parse", "--short", "HEAD"
+        standardOutput = hashStdOut
+    }
+    return hashStdOut.toString().trim()
+}
+
+def getLastCommitChangeList(String hash){
+    def hashStdOut = new ByteArrayOutputStream()
+    exec {
+        commandLine "git", "diff-tree", "--no-commit-id", "--name-only", "-r", hash
+        standardOutput = hashStdOut
+    }
+    return hashStdOut.toString().trim()
+}
+
+task printGitVersionName {
+    doLast {
+        println getLastCommitChangeList(getLastCommitHash())
+    }
+}
