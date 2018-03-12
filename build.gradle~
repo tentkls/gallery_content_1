@@ -1,19 +1,26 @@
+def execute(String[] command){
+   def stdOut = new ByteArrayOutputStream()
+   exec {
+	commandLine command
+	standardOutput = stdOut
+   }
+   return stdOut.toString().trim()
+}
+
 def getLastCommitHash() {
-    def hashStdOut = new ByteArrayOutputStream()
-    exec {
-        commandLine "git", "rev-parse", "--short", "HEAD"
-        standardOutput = hashStdOut
-    }
-    return hashStdOut.toString().trim()
+	return execute("git", "rev-parse", "--short", "HEAD")
 }
 
 def getLastCommitChangeList(String hash){
-    def hashStdOut = new ByteArrayOutputStream()
-    exec {
-        commandLine "git", "show", hash, "--name-only"
-        standardOutput = hashStdOut
-    }
-    return hashStdOut.toString().trim()
+println(hash)
+return execute("git", "show", "--oneline", "--name-only", hash)
+}
+
+def prepareResources(String fileName){
+	execute("cp", "-f", fileName, "../app/app/src/main/assets/")
+	def file = new File(fileName)
+	def json = new JsonSlurper().parseText(file.text)
+	println(json)
 }
 
 task printGitVersionName {

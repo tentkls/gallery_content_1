@@ -1,19 +1,28 @@
+import groovy.json.JsonSlurper
+
+def execute(String[] command){
+   def stdOut = new ByteArrayOutputStream()
+   exec {
+	commandLine command
+	standardOutput = stdOut
+   }
+   return stdOut.toString().trim()
+}
+
 def getLastCommitHash() {
-    def hashStdOut = new ByteArrayOutputStream()
-    exec {
-        commandLine "git", "rev-parse", "--short", "HEAD"
-        standardOutput = hashStdOut
-    }
-    return hashStdOut.toString().trim()
+	return execute("git", "rev-parse", "--short", "HEAD")
 }
 
 def getLastCommitChangeList(String hash){
-    def hashStdOut = new ByteArrayOutputStream()
-    exec {
-        commandLine "git", "diff-tree", "--no-commit-id", "--name-only", "-r", hash
-        standardOutput = hashStdOut
-    }
-    return hashStdOut.toString().trim()
+println(hash)
+return execute("git", "show", "--oneline", "--name-only", hash)
+}
+
+def prepareResources(String fileName){
+	execute("cp", "-f", fileName, "../app/app/src/main/assets/")
+	def file = new File(fileName)
+	def json = new JsonSlurper().parseText(file.text)
+	println(json)
 }
 
 task printGitVersionName {
