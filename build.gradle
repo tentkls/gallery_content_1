@@ -1,19 +1,19 @@
 import groovy.json.JsonSlurper
 
-static def execute(String[] command) {
-    def stdOut = new ByteArrayOutputStream()
+def execute(String[] command) {
+    def out = new ByteArrayOutputStream()
     exec {
         commandLine command
-        standardOutput = stdOut
+        standardOutput = out
     }
-    return stdOut.toString().trim()
+    return out.toString().trim()
 }
 
-static def getLastCommitHash() {
+def getLastCommitHash() {
     return execute("git", "rev-parse", "--short", "HEAD")
 }
 
-static def getLastCommitChangeList(String hash) {
+def getLastCommitChangeList(String hash) {
     def files = execute("git", "show", "--oneline", "--name-only", hash).split("\n")
     if (files.length > 1) {
         return files[1]
@@ -22,13 +22,13 @@ static def getLastCommitChangeList(String hash) {
     }
 }
 
-static def download(String address, String destination) {
+def download(String address, String destination) {
     new File(destination).withOutputStream { out ->
         out << new URL(address).openStream()
     }
 }
 
-static def translate(String text, String lng, String apiKey) {
+def translate(String text, String lng, String apiKey) {
     def baseUrl = new URL("https://translate.yandex.net/api/v1.5/tr.json/translate")
     def queryString = String.format("key=%s&text=%s&lang=%s", apiKey, text, lng)
     def connection = baseUrl.openConnection()
@@ -42,9 +42,9 @@ static def translate(String text, String lng, String apiKey) {
     }
 }
 
-static def prepareApplicationResources(def json) {
+def prepareApplicationResources(def json) {
     new File("../app/app/src/main/assets/content.json").withWriter { writer ->
-        writer.write(json)
+        writer.write(json.toString())
     }
 
     def properties = String.format("app_name=%s\nad_page=%s\npackage_name=com.gallery.gallery%s", json.title, json.adPage, json.uniqueTag)
@@ -58,7 +58,7 @@ static def prepareApplicationResources(def json) {
     }
 }
 
-static def prepareApplicationDescription(def json) {
+def prepareApplicationDescription(def json) {
     def title = json.title
     def shortDescription = json.shortDescription
     def description = json.description
@@ -70,9 +70,9 @@ static def prepareApplicationDescription(def json) {
     def languages = ["en", "de", "it", "es", "pt", "ru", "fr"]
     def apiKey = "trnsl.1.1.20140730T124426Z.488c3627d8ae111c.6f11fb4603c23545d229a79e96d04a7400b864dd"
     languages.each { def lng ->
-        fullTitle <<= lng + "\n" + tranlate(title, lng, apiKey) + "\n\n"
-        fullShortDescription <<= lng + "\n" + tranlate(shortDescription, lng, apiKey) + "\n\n"
-        fullDescription <<= lng + "\n" + tranlate(description, lng, apiKey) + "\n\n"
+        fullTitle <<= lng + "\n" + translate(title, lng, apiKey) + "\n\n"
+        fullShortDescription <<= lng + "\n" + translate(shortDescription, lng, apiKey) + "\n\n"
+        fullDescription <<= lng + "\n" + translate(description, lng, apiKey) + "\n\n"
     }
 
     new File("../app/title.txt").withWriter { writer ->
@@ -86,15 +86,14 @@ static def prepareApplicationDescription(def json) {
     }
 }
 
-static def prepareApplicationMediaFiles(def json) {
+def prepareApplicationMediaFiles(def json) {
     download(json.icon, "../app/app/src/main/res/drawable/icon_template.png")
-    execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "512x512", "../app/app/src/main/res/drawable/icon.png")
-    execute("convert", "../app/app/src/main/res/drawable/icon_template.png", "-crop", "1024x500", "../app/app/src/main/res/drawable/banner.png")
+    execute("python2.7", "crop_image.py")
 }
 
 task prepareResources {
     doLast {
-        def fileName = "test"//getLastCommitChangeList(getLastCommitHash());
+        def fileName = "test"//getLastCommitChangeList(getLastCommitHash())
         def file = new File(fileName)
         def json = new JsonSlurper().parseText(file.text)
         prepareApplicationResources(json)
