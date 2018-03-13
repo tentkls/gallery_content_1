@@ -9,11 +9,11 @@ def execute(String[] command) {
     return out.toString().trim()
 }
 
-def getLastCommitHash() {
+static def getLastCommitHash() {
     return execute("git", "rev-parse", "--short", "HEAD")
 }
 
-def getLastCommitChangeList(String hash) {
+static def getLastCommitChangeList(String hash) {
     def files = execute("git", "show", "--oneline", "--name-only", hash).split("\n")
     if (files.length > 1) {
         return files[1]
@@ -22,7 +22,7 @@ def getLastCommitChangeList(String hash) {
     }
 }
 
-def download(String address, String destination) {
+static def download(String address, String destination) {
     new File(destination).withOutputStream { out ->
         out << new URL(address).openStream()
     }
