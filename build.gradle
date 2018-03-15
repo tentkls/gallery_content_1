@@ -1,6 +1,6 @@
 import groovy.json.JsonSlurper
 
-def artifactsPath = "build/"
+def artifactPath = "build/"
 
 def execute(String[] command) {
     def out = new ByteArrayOutputStream()
@@ -90,7 +90,7 @@ def prepareApplicationDescription(def json) {
 
 def prepareApplicationMediaFiles(def json) {
     download(json.icon, String.format(artifactPath, "icon_template.png"))
-    execute("python2.7", "crop_image.py")
+    execute("python2.7", "crop_image.py", artifactPath)
 }
 
 task prepareResources {
