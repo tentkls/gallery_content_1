@@ -95,7 +95,7 @@ def prepareApplicationMediaFiles(def json) {
 
 task prepareResources {
     doLast {
-        def fileName = "test"//getLastCommitChangeList(getLastCommitHash())
+        def fileName = getLastCommitChangeList(getLastCommitHash())
         def file = new File(fileName)
         def json = new JsonSlurper().parseText(file.text)
         prepareApplicationResources(json)
