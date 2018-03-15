@@ -1,5 +1,7 @@
 import groovy.json.JsonSlurper
 
+def artifactsPath = "build/"
+
 def execute(String[] command) {
     def out = new ByteArrayOutputStream()
     exec {
@@ -43,17 +45,17 @@ def translate(String text, String lng, String apiKey) {
 }
 
 def prepareApplicationResources(def json) {
-    new File("../app/app/src/main/assets/content.json").withWriter { writer ->
+    new File(String.format(artifactPath, "content.json")).withWriter { writer ->
         writer.write(json.toString())
     }
 
     def properties = String.format("app_name=%s\nad_page=%s\npackage_name=com.gallery.gallery%s", json.title, json.adPage, json.uniqueTag)
-    new File("../app/content.properties").withWriter { writer ->
+    new File(String.format(artifactPath, "content.properties")).withWriter { writer ->
         writer.write(properties)
     }
 
     def stringResources = String.format("<resources><string name=\"app_name\">%s</string></resources>", json.title)
-    new File("../app/app/src/main/res/values/strings.xml").withWriter { writer ->
+    new File(String.format(artifactPath, "strings.xml")).withWriter { writer ->
         writer.write(stringResources)
     }
 }
@@ -87,7 +89,7 @@ def prepareApplicationDescription(def json) {
 }
 
 def prepareApplicationMediaFiles(def json) {
-    download(json.icon, "../app/app/src/main/res/drawable/icon_template.png")
+    download(json.icon, String.format(artifactPath, "icon_template.png"))
     execute("python2.7", "crop_image.py")
 }
 

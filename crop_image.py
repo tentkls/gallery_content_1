@@ -21,5 +21,6 @@ def crop(image, output, w, h):
     img.save(output, img.format)
     fd_img.close()
 
-crop('../app/app/src/main/res/drawable/icon_template.png', '../app/app/src/main/res/drawable/icon.png', 512, 512)
-crop('../app/app/src/main/res/drawable/icon_template.png', '../app/app/src/main/res/drawable/banner.png', 1024, 500)
+buildPath = sys.argv[0]
+crop(buildPath + 'icon_template.png', buildPath + 'icon.png', 512, 512)
+crop(buildPath + 'icon_template.png', buildPath + 'banner.png', 1024, 500)
